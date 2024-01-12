@@ -98,6 +98,8 @@ FROM browsh/browsh as browsh
 
 FROM jlesage/firefox-esr
 
+LABEL maintainer "https://github.com/sdaxia"
+
 # # mirrors.ustc.edu.cn
 ARG PACKAGE_MIRRORS_HOST=
 ARG ALPINE_GLIBC_USE_GCOMPAT
