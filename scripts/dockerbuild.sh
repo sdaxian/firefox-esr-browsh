@@ -1,0 +1,1 @@
+docker build -t firefox-esr-browsh --build-arg PACKAGE_MIRRORS_HOST=mirrors.ustc.edu.cn  --build-arg GITHUB_FILE_MIRRORS_HOST=https://gh.con.sh .
