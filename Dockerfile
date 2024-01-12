@@ -93,7 +93,7 @@ RUN upx /tmp/cinit/cinit
 
 # =============================================================================
 
-FROM browsh/browsh as browsh
+FROM --platform=$BUILDPLATFORM browsh/browsh as browsh
 
 
 FROM jlesage/firefox-esr
