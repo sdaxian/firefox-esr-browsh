@@ -126,11 +126,18 @@ RUN \
   sed -i '$aecho --marionette' /etc/services.d/app/params && \
   \
   # windows file power allow is rwxrwxrwx
+  chmod 655 /app/bin/browsh \
+  chmod 655 /etc/cont-init.d/57-browsh-install-addon.sh \
+  chmod 655 /etc/cont-init.d/57-browsh-set-config.sh \
   chmod 644 /etc/services.d/default/browsh.dep && \
   chmod 644 /etc/services.d/browsh/app.dep && \
-  chmod 644 /etc/services.d/browsh/sync && \
-  # chmod 644 /etc/services.d/browsh/uid && \
-  chmod 644 /etc/services.d/browsh/no_pty
+  chmod 655 /etc/services.d/browsh/disabled && \
+  chmod 644 /etc/services.d/browsh/no_pty && \
+  chmod 655 /etc/services.d/browsh/params && \
+  chmod 655 /etc/services.d/browsh/respawn && \
+  chmod 655 /etc/services.d/browsh/run && \
+  chmod 655 /etc/services.d/browsh/shutdown_on_terminate && \
+  chmod 644 /etc/services.d/browsh/sync
 
 # Firefox behaves quite differently to normal on its first run, so by getting
 # that over and done with here when there's no user to be dissapointed means
