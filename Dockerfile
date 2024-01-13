@@ -109,10 +109,10 @@ RUN eval $RUN_EVAL_PKGS_MIRRORS
 RUN apk --no-cache add build-base curl git go && \
     mkdir /tmp/browsh && \
     if [ -n "${GITHUB_FILE_MIRRORS_HOST:-}" ]; then \
-      curl -# -L "${GITHUB_FILE_MIRRORS_HOST}/https://github.com/browsh-org/browsh/archive/refs/tags/v1.8.2.tar.gz" | tar xz --strip 1 -C /tmp/browsh && \
+      curl -# -L "${GITHUB_FILE_MIRRORS_HOST}/https://github.com/browsh-org/browsh/archive/refs/tags/v1.8.2.tar.gz" | tar -xz --strip 1 -C /tmp/browsh && \
       curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi "${GITHUB_FILE_MIRRORS_HOST}/https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi" : \
     else \
-      curl -# -L https://github.com/browsh-org/browsh/archive/refs/tags/v1.8.2.tar.gz | tar xz --strip 1 -C /tmp/browsh && \
+      curl -# -L https://github.com/browsh-org/browsh/archive/refs/tags/v1.8.2.tar.gz | tar -xz --strip 1 -C /tmp/browsh && \
       curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi ; \
     fi 
 RUN echo "ls1: $(ls /tmp)"
