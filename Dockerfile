@@ -114,8 +114,9 @@ RUN apk --no-cache add build-base curl git go && \
     else \
       curl -# -L https://github.com/browsh-org/browsh/archive/refs/tags/v1.8.2.tar.gz | tar xJ --strip 1 -C /tmp/browsh && \
       curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi ; \
-    fi && \
-    ls /tmp/browsh
+    fi 
+RUN echo "aaabbbccc"    
+RUN ls /tmp/browsh
 RUN \
     cd /tmp/browsh/interfacer/cmd && \
     go build && \
