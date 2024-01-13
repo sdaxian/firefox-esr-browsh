@@ -154,8 +154,7 @@ RUN \
   chmod 755 /etc/cont-init.d/57-browsh-install-addon.sh && \
   chmod 755 /etc/cont-init.d/57-browsh-set-config.sh && \
   chmod 644 /etc/services.d/default/browsh.dep && \
-  chmod 644 /etc/services.d/browssun
-h/app.dep && \
+  chmod 644 /etc/services.d/browsh/app.dep && \
   chmod 755 /etc/services.d/browsh/disabled && \
   chmod 644 /etc/services.d/browsh/no_pty && \
   chmod 755 /etc/services.d/browsh/params && \
