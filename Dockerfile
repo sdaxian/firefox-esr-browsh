@@ -93,7 +93,31 @@ RUN upx /tmp/cinit/cinit
 
 # =============================================================================
 
-FROM --platform=$BUILDPLATFORM browsh/browsh as browsh
+FROM --platform=$BUILDPLATFORM alpine:3.18 as browshbuild
+
+# Helper scripts
+WORKDIR /build
+
+ARG PACKAGE_MIRRORS_HOST
+ARG ALPINE_GLIBC_USE_GCOMPAT
+ARG GITHUB_FILE_MIRRORS_HOST
+
+ARG RUN_EVAL_PKGS_MIRRORS
+
+RUN eval $RUN_EVAL_PKGS_MIRRORS
+
+RUN apk --no-cache add build-base curl git go && \
+    mkdir /tmp/browsh && \
+    if [ -n "${GITHUB_FILE_MIRRORS_HOST:-}" ]; then \
+      curl -# -L "${GITHUB_FILE_MIRRORS_HOST}/https://github.com/browsh-org/browsh/archive/refs/tags/v1.8.2.tar.gz" | tar xJ --strip 1 -C /tmp/browsh && \
+      curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi "${GITHUB_FILE_MIRRORS_HOST}/https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi" : \
+    else \
+      curl -# -L https://github.com/browsh-org/browsh/archive/refs/tags/v1.8.2.tar.gz | tar xJ --strip 1 -C /tmp/browsh && \
+      curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi ; \
+    fi && \
+    cd /tmp/browsh/interfacer/cmd && \
+    go build && \
+    cp -v /tmp/browsh/interfacer/cmd/browsh /app/bin/browsh
 
 
 FROM jlesage/firefox-esr
@@ -111,10 +135,10 @@ ARG RUN_EVAL_INSTALL_GLIBC_IN_ALPINE
 RUN eval $RUN_EVAL_PKGS_MIRRORS && eval $RUN_EVAL_INSTALL_GLIBC_IN_ALPINE
 
 # copy file is needed by the browsh, copy the firefox extension and enable it is needed by the browsh 
-COPY --link --from=browsh /app/bin/browsh /app/bin/browsh
-COPY --link --from=browsh /app/.config/browsh/config.toml /app/data/browsh/.config/browsh/config.toml
-COPY --link --from=browsh /app/.config/browsh/firefox_profile/extensions/ /app/data/browsh/.config/firefox/profile/extensions/ 
-COPY --link --from=browsh /app/.config/browsh/firefox_profile/extensions.json /app/data/browsh/.config/firefox/profile/extensions.json
+COPY --link --from=browshbuild /app/bin/browsh /app/bin/browsh
+COPY --link --from=browshbuild /app/.config/browsh/config.toml /app/data/browsh/.config/browsh/config.toml
+COPY --link --from=browshbuild /app/.config/browsh/firefox_profile/extensions/ /app/data/browsh/.config/firefox/profile/extensions/ 
+COPY --link --from=browshbuild /app/.config/browsh/firefox_profile/extensions.json /app/data/browsh/.config/firefox/profile/extensions.json
 
 COPY /rootfs/ /
 
@@ -130,7 +154,8 @@ RUN \
   chmod 755 /etc/cont-init.d/57-browsh-install-addon.sh && \
   chmod 755 /etc/cont-init.d/57-browsh-set-config.sh && \
   chmod 644 /etc/services.d/default/browsh.dep && \
-  chmod 644 /etc/services.d/browsh/app.dep && \
+  chmod 644 /etc/services.d/browssun
+h/app.dep && \
   chmod 755 /etc/services.d/browsh/disabled && \
   chmod 644 /etc/services.d/browsh/no_pty && \
   chmod 755 /etc/services.d/browsh/params && \
