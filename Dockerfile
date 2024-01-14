@@ -100,7 +100,7 @@ RUN upx /tmp/cinit/cinit
 # =============================================================================
 
 # rebuild browsh for more platform
-FROM --platform=$BUILDPLATFORM alpine:3.18 as browshbuild
+FROM alpine:3.18 as browshbuild
 
 ARG TARGETARCH
 
@@ -115,6 +115,8 @@ ARG RUN_EVAL_PKGS_MIRRORS
 ARG RUN_UPDATE_GOLANG_PROXY
 
 RUN eval $RUN_EVAL_PKGS_MIRRORS
+
+RUN echo "TARGETARCH: [$TARGETARCH]"
 
 RUN apk --no-cache add build-base curl git go && \
     eval $RUN_UPDATE_GOLANG_PROXY && \
