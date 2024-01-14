@@ -12,7 +12,7 @@ ARG RUN_EVAL_PKGS_MIRRORS='if [ -n "${PACKAGE_MIRRORS_HOST:-}" ]; then \
     if [[ -n $(which apk) ]]; then  \
       # alpine
       sed -i "s/dl-cdn.alpinelinux.org/$PACKAGE_MIRRORS_HOST/g" /etc/apk/repositories && \
-      apk update; \
+      apk update ; \
     else \
       # debian
       sed -i "s/deb.debian.org/$PACKAGE_MIRRORS_HOST/g" /etc/apt/sources.list && \
@@ -57,14 +57,13 @@ FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
 FROM --platform=$BUILDPLATFORM alpine:3.18 AS upx
 
 ARG PACKAGE_MIRRORS_HOST
-ARG ALPINE_GLIBC_USE_GCOMPAT
 ARG GITHUB_FILE_MIRRORS_HOST
 
 ARG RUN_EVAL_PKGS_MIRRORS
 
 RUN eval $RUN_EVAL_PKGS_MIRRORS
 
-RUN apk --no-cache add build-base curl make cmake git && \
+RUN apk --no-cache add build-base curl make cmake lld git && \
     mkdir /tmp/upx && \
     if [ -n "${GITHUB_FILE_MIRRORS_HOST:-}" ]; then \
       curl -# -L "${GITHUB_FILE_MIRRORS_HOST}/https://github.com/upx/upx/releases/download/v4.1.0/upx-4.1.0-src.tar.xz" | tar xJ --strip 1 -C /tmp/upx ; \
@@ -82,15 +81,14 @@ ARG TARGETPLATFORM
 COPY --from=xx / /
 COPY src/cinit /tmp/cinit
 
-ARG PACKAGE_MIRRORS_HOST=
-ARG ALPINE_GLIBC_USE_GCOMPAT
+ARG PACKAGE_MIRRORS_HOST
 ARG GITHUB_FILE_MIRRORS_HOST
 
 ARG RUN_EVAL_PKGS_MIRRORS
 
 RUN eval $RUN_EVAL_PKGS_MIRRORS
   
-RUN apk --no-cache add make clang
+RUN apk --no-cache add build-base make cmake clang
 RUN xx-apk --no-cache add gcc musl-dev
 RUN CC=xx-clang \
     make -C /tmp/cinit
@@ -104,11 +102,12 @@ RUN upx /tmp/cinit/cinit
 # rebuild browsh for more platform
 FROM --platform=$BUILDPLATFORM alpine:3.18 as browshbuild
 
+ARG TARGETARCH
+
 # Helper scripts
 WORKDIR /build
 
 ARG PACKAGE_MIRRORS_HOST
-ARG ALPINE_GLIBC_USE_GCOMPAT
 ARG GITHUB_FILE_MIRRORS_HOST
 ARG GOLANG_GOPROXY
 
@@ -128,27 +127,24 @@ RUN apk --no-cache add build-base curl git go && \
       curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi ; \
     fi && \
     cd /tmp/browsh/interfacer/cmd/browsh && \
-    echo "GOPROXY: [$GOPROXY], GOLANG_GOPROXY: [$GOLANG_GOPROXY]" && \
-    go build && \
+    GOARCH=$TARGETARCH && go build && \
     mkdir -p /app/bin && \ 
     cp -v /tmp/browsh/interfacer/cmd/browsh/browsh /app/bin/
 
 
-FROM browsh/browsh:v1.8.2 as browsh
+FROM --platform=$BUILDPLATFORM browsh/browsh:v1.8.2 as browsh
 
-FROM jlesage/firefox-esr
+FROM --platform=$BUILDPLATFORM jlesage/firefox-esr
 
 LABEL maintainer "https://github.com/sdaxia"
 
 # mirrors.ustc.edu.cn
 ARG PACKAGE_MIRRORS_HOST=
-ARG ALPINE_GLIBC_USE_GCOMPAT
 ARG GITHUB_FILE_MIRRORS_HOST
 
 ARG RUN_EVAL_PKGS_MIRRORS
-ARG RUN_EVAL_INSTALL_GLIBC_IN_ALPINE
 
-RUN eval $RUN_EVAL_PKGS_MIRRORS && eval $RUN_EVAL_INSTALL_GLIBC_IN_ALPINE
+RUN eval $RUN_EVAL_PKGS_MIRRORS 
 
 # copy file is needed by the browsh . 
 COPY --link --from=browshbuild /app/bin/browsh /app/bin/browsh
