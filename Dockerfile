@@ -129,7 +129,7 @@ RUN apk --no-cache add build-base curl git go && \
       curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi ; \
     fi && \
     cd /tmp/browsh/interfacer/cmd/browsh && \
-    GOARCH=$TARGETARCH && go build && \
+    GOARCH=$TARGETARCH && go env && go build && \
     mkdir -p /app/bin && \ 
     cp -v /tmp/browsh/interfacer/cmd/browsh/browsh /app/bin/
 
