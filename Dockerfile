@@ -132,9 +132,9 @@ RUN apk --no-cache add build-base curl git go && \
     cp -v /tmp/browsh/interfacer/cmd/browsh/browsh /app/bin/
 
 
-FROM --platform=$BUILDPLATFORM browsh/browsh:v1.8.2 as browsh
+FROM browsh/browsh:v1.8.2 as browsh
 
-FROM --platform=$BUILDPLATFORM jlesage/firefox-esr
+FROM jlesage/firefox-esr
 
 LABEL maintainer "https://github.com/sdaxia"
 
