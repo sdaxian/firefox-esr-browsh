@@ -4,6 +4,8 @@
 ARG PACKAGE_MIRRORS_HOST
 ARG ALPINE_GLIBC_USE_GCOMPAT
 ARG GITHUB_FILE_MIRRORS_HOST
+#=https://goproxy.cn,direct
+ARG GOLANG_GOPROXY
 
 # For the packages mirrors .
 ARG RUN_EVAL_PKGS_MIRRORS='if [ -n "${PACKAGE_MIRRORS_HOST:-}" ]; then \
@@ -18,16 +20,16 @@ ARG RUN_EVAL_PKGS_MIRRORS='if [ -n "${PACKAGE_MIRRORS_HOST:-}" ]; then \
     fi \
   fi'
 
-# For the alpine install glibc support , the install-glibc only support in jlesage/docker-baseimage
+# For the alpine install glibc support , the install-glibc only support in jlesage/docker-baseimage .
 ARG RUN_EVAL_INSTALL_GLIBC_IN_ALPINE='if [[ -n $(which apk) ]]; then \
     if [ -n "${ALPINE_GLIBC_USE_GCOMPAT:-}" ]; then \
       add-pkg gcompat; \
     else \
-      # the install_glibc use mirrors 
+      # the install_glibc use mirrors .
       if [ -n "${GITHUB_FILE_MIRRORS_HOST:-}" ]; then \
         cp /opt/base/bin/install-glibc /tmp/install-glibc && \
         sed -i "s#GLIBC_URL=https://github.com#GLIBC_URL=${GITHUB_FILE_MIRRORS_HOST}/https://github.com#g" /tmp/install-glibc && \
-        # install-glibc self done clear /tmp
+        # install-glibc self done clear /tmp .
         /tmp/install-glibc ; \
       else \
         install-glibc; \
@@ -35,10 +37,16 @@ ARG RUN_EVAL_INSTALL_GLIBC_IN_ALPINE='if [[ -n $(which apk) ]]; then \
     fi \
   fi'
 
+# For the update golang proxy support .
+ARG RUN_UPDATE_GOLANG_PROXY='if [ -n "${GOLANG_GOPROXY:-}" ]; then \ 
+    go env -w GOPROXY=${GOLANG_GOPROXY}; \
+  fi'
+
+
 # -----------------------------------------------------------------------------
 # rebuild cinit for append option of no_pty, no_pty for services in 
 # 'services.d/{services}/' , true value is service is not create 
-# pseudo terminal, therefore cinit log based is disabled
+# pseudo terminal, therefore cinit log based is disabled .
 
 
 # Dockerfile cross-compilation helpers.
@@ -93,6 +101,7 @@ RUN upx /tmp/cinit/cinit
 
 # =============================================================================
 
+# rebuild browsh for more platform
 FROM --platform=$BUILDPLATFORM alpine:3.18 as browshbuild
 
 # Helper scripts
@@ -101,33 +110,37 @@ WORKDIR /build
 ARG PACKAGE_MIRRORS_HOST
 ARG ALPINE_GLIBC_USE_GCOMPAT
 ARG GITHUB_FILE_MIRRORS_HOST
+ARG GOLANG_GOPROXY
 
 ARG RUN_EVAL_PKGS_MIRRORS
+ARG RUN_UPDATE_GOLANG_PROXY
 
 RUN eval $RUN_EVAL_PKGS_MIRRORS
 
 RUN apk --no-cache add build-base curl git go && \
-    mkdir /tmp/browsh && \
+    eval $RUN_UPDATE_GOLANG_PROXY && \
+    mkdir -p /tmp/browsh && \
     if [ -n "${GITHUB_FILE_MIRRORS_HOST:-}" ]; then \
       curl -# -L "${GITHUB_FILE_MIRRORS_HOST}/https://github.com/browsh-org/browsh/archive/refs/tags/v1.8.2.tar.gz" | tar -xz --strip 1 -C /tmp/browsh && \
-      curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi "${GITHUB_FILE_MIRRORS_HOST}/https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi" : \
+      curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi "${GITHUB_FILE_MIRRORS_HOST}/https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi" ; \
     else \
       curl -# -L https://github.com/browsh-org/browsh/archive/refs/tags/v1.8.2.tar.gz | tar -xz --strip 1 -C /tmp/browsh && \
       curl -# -L -o /tmp/browsh/interfacer/src/browsh/browsh.xpi https://github.com/browsh-org/browsh/releases/download/v1.8.2/browsh-1.8.2.xpi ; \
-    fi 
-RUN echo "ls1: $(ls /tmp)"
-RUN echo "ls2: $(ls /tmp/browsh)"
-RUN \
-    cd /tmp/browsh/interfacer/cmd && \
+    fi && \
+    cd /tmp/browsh/interfacer/cmd/browsh && \
+    echo "GOPROXY: [$GOPROXY], GOLANG_GOPROXY: [$GOLANG_GOPROXY]" && \
     go build && \
-    cp -v /tmp/browsh/interfacer/cmd/browsh /app/bin/browsh
+    mkdir -p /app/bin && \ 
+    cp -v /tmp/browsh/interfacer/cmd/browsh/browsh /app/bin/
 
+
+FROM browsh/browsh:v1.8.2 as browsh
 
 FROM jlesage/firefox-esr
 
 LABEL maintainer "https://github.com/sdaxia"
 
-# # mirrors.ustc.edu.cn
+# mirrors.ustc.edu.cn
 ARG PACKAGE_MIRRORS_HOST=
 ARG ALPINE_GLIBC_USE_GCOMPAT
 ARG GITHUB_FILE_MIRRORS_HOST
@@ -137,22 +150,23 @@ ARG RUN_EVAL_INSTALL_GLIBC_IN_ALPINE
 
 RUN eval $RUN_EVAL_PKGS_MIRRORS && eval $RUN_EVAL_INSTALL_GLIBC_IN_ALPINE
 
-# copy file is needed by the browsh, copy the firefox extension and enable it is needed by the browsh 
+# copy file is needed by the browsh . 
 COPY --link --from=browshbuild /app/bin/browsh /app/bin/browsh
-COPY --link --from=browshbuild /app/.config/browsh/config.toml /app/data/browsh/.config/browsh/config.toml
-COPY --link --from=browshbuild /app/.config/browsh/firefox_profile/extensions/ /app/data/browsh/.config/firefox/profile/extensions/ 
-COPY --link --from=browshbuild /app/.config/browsh/firefox_profile/extensions.json /app/data/browsh/.config/firefox/profile/extensions.json
+COPY --link --from=browsh /app/.config/browsh/config.toml /app/data/browsh/.config/browsh/config.toml
+# copy the firefox extension and enable it is needed by the browsh .
+COPY --link --from=browsh /app/.config/browsh/firefox_profile/extensions/ /app/data/browsh/.config/firefox/profile/extensions/ 
+COPY --link --from=browsh /app/.config/browsh/firefox_profile/extensions.json /app/data/browsh/.config/firefox/profile/extensions.json
 
 COPY /rootfs/ /
 
 RUN \
   add-pkg jq && \ 
-  # Let the browsh use exist the firefox
+  # Let the browsh use exist the firefox .
   sed -i 's/use-existing = false/use-existing = true/g' /app/data/browsh/.config/browsh/config.toml && \
-  # Let the firefox use marionette mode, because the browsh need marionette
+  # Let the firefox use marionette mode, because the browsh need marionette .
   sed -i '$aecho --marionette' /etc/services.d/app/params && \
   \
-  # windows file power allow is rwxrwxrwx
+  # windows file power allow is rwxrwxrwx .
   chmod 755 /app/bin/startbrowsh && \
   chmod 755 /etc/cont-init.d/57-browsh-install-addon.sh && \
   chmod 755 /etc/cont-init.d/57-browsh-set-config.sh && \
@@ -175,7 +189,7 @@ RUN \
   \
   sleep 10
 
-# replace cinit of jlesage/docker-baseimage 
+# replace cinit of jlesage/docker-baseimage . 
 COPY --link --from=cinit /tmp/cinit/cinit /opt/base/sbin/
 
 ENTRYPOINT ["/app/bin/startbrowsh"]
